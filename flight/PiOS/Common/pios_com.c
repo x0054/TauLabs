@@ -53,7 +53,7 @@ struct pios_com_dev {
 	uintptr_t lower_id;
 	const struct pios_com_driver * driver;
 
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 	struct pios_semaphore *tx_sem;
 	struct pios_semaphore *rx_sem;
 	struct pios_mutex *sendbuffer_mtx;
@@ -119,7 +119,7 @@ int32_t PIOS_COM_Init(uintptr_t * com_id, const struct pios_com_driver * driver,
 
 	if (has_rx) {
 		fifoBuf_init(&com_dev->rx, rx_buffer, rx_buffer_len);
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 		com_dev->rx_sem = PIOS_Semaphore_Create();
 #endif	/* PIOS_INCLUDE_FREERTOS */
 		(com_dev->driver->bind_rx_cb)(lower_id, PIOS_COM_RxInCallback, (uintptr_t)com_dev);
@@ -132,12 +132,12 @@ int32_t PIOS_COM_Init(uintptr_t * com_id, const struct pios_com_driver * driver,
 
 	if (has_tx) {
 		fifoBuf_init(&com_dev->tx, tx_buffer, tx_buffer_len);
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 		com_dev->tx_sem = PIOS_Semaphore_Create();
 #endif	/* PIOS_INCLUDE_FREERTOS */
 		(com_dev->driver->bind_tx_cb)(lower_id, PIOS_COM_TxOutCallback, (uintptr_t)com_dev);
 	}
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 	com_dev->sendbuffer_mtx = PIOS_Mutex_Create();
 #endif /* PIOS_INCLUDE_FREERTOS */
 
@@ -150,7 +150,7 @@ out_fail:
 
 static void PIOS_COM_UnblockRx(struct pios_com_dev * com_dev, bool * need_yield)
 {
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 	PIOS_Semaphore_Give_FromISR(com_dev->rx_sem, need_yield);
 #else
 	*need_yield = false;
@@ -159,7 +159,7 @@ static void PIOS_COM_UnblockRx(struct pios_com_dev * com_dev, bool * need_yield)
 
 static void PIOS_COM_UnblockTx(struct pios_com_dev * com_dev, bool * need_yield)
 {
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 	PIOS_Semaphore_Give_FromISR(com_dev->tx_sem, need_yield);
 #else
 	*need_yield = false;
@@ -259,7 +259,7 @@ int32_t PIOS_COM_SendBufferNonBlocking(uintptr_t com_id, const uint8_t *buffer, 
 
 	PIOS_Assert(com_dev->has_tx);
 
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 	if (PIOS_Mutex_Lock(com_dev->sendbuffer_mtx, 0) != pdTRUE) {
 		return -3;
 	}
@@ -273,7 +273,7 @@ int32_t PIOS_COM_SendBufferNonBlocking(uintptr_t com_id, const uint8_t *buffer, 
 		 * no longer accepting data.
 		 */
 		fifoBuf_clearData(&com_dev->tx);
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 		PIOS_Mutex_Unlock(com_dev->sendbuffer_mtx);
 #endif /* PIOS_INCLUDE_FREERTOS */
 
@@ -281,7 +281,7 @@ int32_t PIOS_COM_SendBufferNonBlocking(uintptr_t com_id, const uint8_t *buffer, 
 	}
 
 	if (len > fifoBuf_getFree(&com_dev->tx)) {
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 		PIOS_Mutex_Unlock(com_dev->sendbuffer_mtx);
 #endif /* PIOS_INCLUDE_FREERTOS */
 		/* Buffer cannot accept all requested bytes (retry) */
@@ -298,7 +298,7 @@ int32_t PIOS_COM_SendBufferNonBlocking(uintptr_t com_id, const uint8_t *buffer, 
 		}
 	}
 
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 	PIOS_Mutex_Unlock(com_dev->sendbuffer_mtx);
 #endif /* PIOS_INCLUDE_FREERTOS */
 	return (bytes_into_fifo);
@@ -350,7 +350,7 @@ int32_t PIOS_COM_SendBuffer(uintptr_t com_id, const uint8_t *buffer, uint16_t le
 					(com_dev->driver->tx_start)(com_dev->lower_id,
 								fifoBuf_getUsed(&com_dev->tx));
 				}
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 				if (PIOS_Semaphore_Take(com_dev->tx_sem, 5000) != true) {
 					return -3;
 				}
@@ -491,7 +491,7 @@ uint16_t PIOS_COM_ReceiveBuffer(uintptr_t com_id, uint8_t * buf, uint16_t buf_le
 						    fifoBuf_getFree(&com_dev->rx));
 		}
 		if (timeout_ms > 0) {
-#if defined(PIOS_INCLUDE_FREERTOS)
+#if defined(PIOS_INCLUDE_FREERTOS) || defined(PIOS_INCLUDE_CHIBIOS)
 			if (PIOS_Semaphore_Take(com_dev->rx_sem, timeout_ms) == true) {
 				/* Make sure we don't come back here again */
 				timeout_ms = 0;
