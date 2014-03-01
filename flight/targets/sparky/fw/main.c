@@ -2,10 +2,10 @@
  ******************************************************************************
  * @addtogroup TauLabsTargets Tau Labs Targets
  * @{
- * @addtogroup Sparky Tau Labs Sparky support files
+ * @addtogroup Sparky Sparky support files
  * @{
  *
- * @file       sparky.c 
+ * @file       main.c
  * @author     Tau Labs, http://taulabs.org, Copyright (C) 2012-2014
  * @brief      Start FreeRTOS and the Modules.
  * @see        The GNU Public License (GPL) Version 3
@@ -48,11 +48,8 @@ static struct pios_thread *initTaskHandle;
 /* Function Prototypes */
 static void initTask(void *parameters);
 
-/* Prototype of generated InitModules() function */
-extern void InitModules(void);
-
 /**
-* OpenPilot Main function:
+* Tau Labs Main function:
 *
 * Initialize PiOS<BR>
 * Create the "System" task (SystemModInitializein Modules/System/systemmod.c) <BR>
@@ -64,7 +61,14 @@ int main()
 {
 	/* NOTE: Do NOT modify the following start-up sequence */
 	/* Any new initialization functions should be added in OpenPilotInit() */
-	vPortInitialiseBlocks();
+	PIOS_heap_initialize_blocks();
+
+#if defined(PIOS_INCLUDE_CHIBIOS)
+	halInit();
+	chSysInit();
+
+	boardInit();
+#endif /* defined(PIOS_INCLUDE_CHIBIOS) */
 
 	/* Brings up System using CMSIS functions, enables the LEDs. */
 	PIOS_SYS_Init();
@@ -74,6 +78,7 @@ int main()
 	initTaskHandle = PIOS_Thread_Create(initTask, "init", INIT_TASK_STACK, NULL, INIT_TASK_PRIORITY);
 	PIOS_Assert(initTaskHandle != NULL);
 
+#if defined(PIOS_INCLUDE_FREERTOS)
 	/* Start the FreeRTOS scheduler */
 	vTaskStartScheduler();
 
@@ -84,16 +89,17 @@ int main()
 		PIOS_LED_Toggle(PIOS_LED_HEARTBEAT); \
 		PIOS_DELAY_WaitmS(100); \
 	};
-
+#elif defined(PIOS_INCLUDE_CHIBIOS)
+	PIOS_Thread_Sleep(PIOS_THREAD_TIMEOUT_MAX);
+#endif /* defined(PIOS_INCLUDE_CHIBIOS) */
 	return 0;
 }
 /**
- * Initialisation task.
+ * Initialization task.
  *
- * Runs board and module initialisation, then terminates.
+ * Runs board and module initialization, then terminates.
  */
-void
-initTask(void *parameters)
+void initTask(void *parameters)
 {
 	/* board driver init */
 	PIOS_Board_Init();
