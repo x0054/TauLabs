@@ -33,6 +33,7 @@
 #include <stdbool.h>
 
 #if defined(PIOS_INCLUDE_FREERTOS)
+
 #include "FreeRTOSConfig.h"
 
 enum pios_thread_prio_e
@@ -49,7 +50,27 @@ struct pios_thread
 {
 	xTaskHandle task_handle;
 };
-#endif /* defined(PIOS_INCLUDE_FREERTOS) */
+
+#elif defined(PIOS_INCLUDE_CHIBIOS)
+
+#include "ch.h"
+
+enum pios_thread_prio_e
+{
+	PIOS_THREAD_PRIO_LOW = LOWPRIO,
+	PIOS_THREAD_PRIO_NORMAL = NORMALPRIO,
+	PIOS_THREAD_PRIO_HIGH = NORMALPRIO + 32,
+	PIOS_THREAD_PRIO_HIGHEST = HIGHPRIO,
+};
+
+#define PIOS_THREAD_STACK_SIZE_MIN THD_WA_SIZE(0)
+
+struct pios_thread
+{
+	Thread *threadp;
+};
+
+#endif /* defined(PIOS_INCLUDE_CHIBIOS) */
 
 /*
  * The following functions implement the concept of a thread usable

@@ -125,4 +125,116 @@ void PIOS_Thread_Scheduler_Resume(void)
 	xTaskResumeAll();
 }
 
-#endif /* defined(PIOS_INCLUDE_FREERTOS) */
+#elif defined(PIOS_INCLUDE_CHIBIOS)
+
+#define ST2MS(n) (((((n) - 1UL) * 1000UL) / CH_CFG_ST_FREQUENCY) + 1UL)
+
+struct pios_thread *PIOS_Thread_Create(void (*fp)(void *), const char *namep, size_t stack_bytes, void *argp, enum pios_thread_prio_e prio)
+{
+	struct pios_thread *thread = PIOS_malloc(sizeof(struct pios_thread));
+	if (thread == NULL)
+		return NULL;
+
+	uint8_t *wap = PIOS_malloc(stack_bytes);
+	if (wap == NULL)
+	{
+		PIOS_free(thread);
+		return NULL;
+	}
+
+	thread->threadp = chThdCreateStatic(wap, stack_bytes, prio, (msg_t (*)(void *))fp, argp);
+	if (thread->threadp == NULL)
+	{
+		PIOS_free(thread);
+		PIOS_free(wap);
+		return NULL;
+	}
+
+	return thread;
+}
+
+#if (CH_USE_WAITEXIT == TRUE)
+void PIOS_Thread_Delete(struct pios_thread *threadp)
+{
+	if (threadp == NULL)
+	{
+		chThdExit(0);
+	}
+	else
+	{
+		chThdTerminate(threadp->threadp);
+		chThdWait(threadp->threadp);
+	}
+}
+#else
+#error "PIOS_Thread_Delete requires CH_USE_WAITEXIT to be defined TRUE"
+#endif /* (CH_USE_WAITEXIT == TRUE) */
+
+uint32_t PIOS_Thread_Systime(void)
+{
+	return (uint32_t)ST2MS(chTimeNow());
+}
+
+void PIOS_Thread_Sleep(uint32_t time_ms)
+{
+	if (time_ms == PIOS_THREAD_TIMEOUT_MAX)
+		chThdSleep(TIME_INFINITE);
+	else
+		chThdSleep(MS2ST(time_ms));
+}
+
+void PIOS_Thread_Sleep_Until(uint32_t *previous_ms, uint32_t increment_ms)
+{
+	systime_t future = MS2ST(*previous_ms) + MS2ST(increment_ms);
+	chSysLock();
+	systime_t now = chTimeNow();
+	int mustDelay =
+		now < MS2ST(*previous_ms) ?
+		(now < future && future < MS2ST(*previous_ms)) :
+		(now < future || future < MS2ST(*previous_ms));
+	if (mustDelay)
+		chThdSleepS(future - now);
+	chSysUnlock();
+	*previous_ms = ST2MS(future);
+}
+
+uint32_t PIOS_Thread_Get_Stack_Usage(struct pios_thread *threadp)
+{
+#if CH_DBG_FILL_THREADS
+	uint32_t *stack = (uint32_t*)((size_t)threadp->threadp + sizeof(*threadp->threadp));
+	uint32_t *stklimit = stack;
+	while (*stack ==
+			((CH_STACK_FILL_VALUE << 24) |
+			(CH_STACK_FILL_VALUE << 16) |
+			(CH_STACK_FILL_VALUE << 8) |
+			(CH_STACK_FILL_VALUE << 0)))
+		++stack;
+	return (stack - stklimit) * 4;
+#else
+	return 0;
+#endif /* CH_DBG_FILL_THREADS */
+}
+
+uint32_t PIOS_Thread_Get_Runtime(struct pios_thread *threadp)
+{
+	chSysLock();
+
+	uint32_t result = threadp->threadp->ticks_total;
+	threadp->threadp->ticks_total = 0;
+
+	chSysUnlock();
+
+	return result;
+}
+
+void PIOS_Thread_Scheduler_Suspend(void)
+{
+	chSysLock();
+}
+
+void PIOS_Thread_Scheduler_Resume(void)
+{
+	chSysUnlock();
+}
+
+#endif /* defined(PIOS_INCLUDE_CHIBIOS) */
