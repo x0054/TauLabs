@@ -118,7 +118,7 @@ void updateAttitudeDrift(AccelsData * accelsData, GyrosData * gyrosData, const f
 
 			//Allocate memory for DCM drift globals
 			drft = (struct GlobalDcmDriftVariables *)
-			    pvPortMalloc(sizeof (struct GlobalDcmDriftVariables));
+					PIOS_malloc(sizeof (struct GlobalDcmDriftVariables));
 
 			memset(drft->GPSV_old, 0, sizeof(drft->GPSV_old));
 			memset(drft->omegaCorrI, 0, sizeof(drft->omegaCorrI));

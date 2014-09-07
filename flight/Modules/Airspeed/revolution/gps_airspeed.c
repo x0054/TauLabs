@@ -63,7 +63,7 @@ static struct GPSGlobals *gps;
 void gps_airspeedInitialize()
 {
 	//This method saves memory in case we don't use the GPS module.
-	gps=(struct GPSGlobals *)pvPortMalloc(sizeof(struct GPSGlobals));
+	gps=(struct GPSGlobals *)PIOS_malloc(sizeof(struct GPSGlobals));
 	
 	//GPS airspeed calculation variables
 	GPSVelocityData gpsVelData;

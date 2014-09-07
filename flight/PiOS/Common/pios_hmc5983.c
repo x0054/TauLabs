@@ -82,13 +82,13 @@ static struct hmc5983_dev *PIOS_HMC5983_alloc(void) {
 
 	hmc5983_dev->queue = xQueueCreate(PIOS_HMC5983_MAX_DOWNSAMPLE, sizeof(struct pios_sensor_mag_data));
 	if (hmc5983_dev->queue == NULL) {
-		vPortFree(hmc5983_dev);
+		PIOS_free(hmc5983_dev);
 		return NULL;
 	}
 
 	hmc5983_dev->data_ready_sema = PIOS_Semaphore_Create();
 	if (hmc5983_dev->data_ready_sema == NULL) {
-		vPortFree(hmc5983_dev);
+		PIOS_free(hmc5983_dev);
 		return NULL;
 	}
 

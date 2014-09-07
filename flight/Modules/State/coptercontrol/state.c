@@ -139,7 +139,7 @@ int32_t StateInitialize(void)
 	HomeLocationInitialize();
 
 	gpsNew_flag = false;
-	glblAtt = (GlobalAttitudeVariables *) pvPortMalloc(sizeof(GlobalAttitudeVariables));
+	glblAtt = (GlobalAttitudeVariables *)PIOS_malloc(sizeof(GlobalAttitudeVariables));
 
 	// Initialize quaternion
 	AttitudeActualData attitude;

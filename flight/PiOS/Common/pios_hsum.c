@@ -129,7 +129,7 @@ static struct pios_hsum_dev *PIOS_HSUM_Alloc(void)
 {
 	struct pios_hsum_dev *hsum_dev;
 
-	hsum_dev = (struct pios_hsum_dev *)pvPortMalloc(sizeof(*hsum_dev));
+	hsum_dev = (struct pios_hsum_dev *)PIOS_malloc(sizeof(*hsum_dev));
 	if (!hsum_dev)
 		return NULL;
 

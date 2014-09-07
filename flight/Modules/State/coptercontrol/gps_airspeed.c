@@ -77,7 +77,7 @@ static void compute_rbe(float Rbe[3][3])
 void gps_airspeed_initialize(void)
 {
 	//This method saves memory in case we don't use the GPS module.
-	gps = (struct GPSGlobals *)pvPortMalloc(sizeof(struct GPSGlobals));
+	gps = (struct GPSGlobals *)PIOS_malloc(sizeof(struct GPSGlobals));
 
 	gps->gpsVelOld_N = 0;
 	gps->gpsVelOld_E = 0;

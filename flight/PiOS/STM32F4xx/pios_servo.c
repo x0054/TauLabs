@@ -82,7 +82,7 @@ int32_t PIOS_Servo_Init(const struct pios_servo_cfg * cfg)
 	}
 
 	/* Allocate memory */
-	output_timer_frequency_scaler = pvPortMalloc(servo_cfg->num_channels * sizeof(typeof(output_timer_frequency_scaler)));
+	output_timer_frequency_scaler = PIOS_malloc(servo_cfg->num_channels * sizeof(typeof(output_timer_frequency_scaler)));
 	// Check that memory was successfully allocated, and return if not
 	if (output_timer_frequency_scaler == NULL) {
 		return -1;

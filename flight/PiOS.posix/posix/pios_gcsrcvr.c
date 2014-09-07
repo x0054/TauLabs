@@ -66,7 +66,7 @@ static struct pios_gcsrcvr_dev *PIOS_gcsrcvr_alloc(void)
 {
 	struct pios_gcsrcvr_dev * gcsrcvr_dev;
 
-	gcsrcvr_dev = (struct pios_gcsrcvr_dev *)pvPortMalloc(sizeof(*gcsrcvr_dev));
+	gcsrcvr_dev = (struct pios_gcsrcvr_dev *)PIOS_malloc(sizeof(*gcsrcvr_dev));
 	if (!gcsrcvr_dev) return(NULL);
 
 	gcsrcvr_dev->magic = PIOS_GCSRCVR_DEV_MAGIC;
