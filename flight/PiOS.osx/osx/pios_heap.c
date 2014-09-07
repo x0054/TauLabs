@@ -67,6 +67,11 @@ void PIOS_free(void * buf)
 	vPortFree(buf);
 }
 
+size_t PIOS_heap_get_free_size(void)
+{
+	return 1024;
+}
+
 /**
  * @}
  * @}
